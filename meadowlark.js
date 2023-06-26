@@ -21,8 +21,13 @@ app.use(handlers.serverError)
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Express started on http://localhost:${PORT} ` +
-    'Press Ctrl+C to terminate.'
-  )
-})
+
+if(require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Express started on http://localhost:${PORT} ` +
+      'Press Ctrl+C to terminate.'
+    )
+  })
+} else {
+  module.exports = app
+}
