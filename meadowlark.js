@@ -19,17 +19,15 @@ app.set('view engine', 'handlebars')
 
 app.use(express.static(__dirname + '/public'))
 
-app.use(express.urlencoded({ extended: false }))
+app.use(express.json())
 
 app.get('/', handlers.home)
 
 app.get('/about', handlers.about)
 
-app.get('/newsletter-signup', handlers.newsletterSignup)
+app.get('/newsletter', handlers.newsletter)
 
-app.post('/newsletter-signup/process', handlers.newsletterSignupProcess)
-
-app.post('/newsletter-signup/thank-you', handlers.newsletterSignupThankYou)
+app.post('/api/newsletter-signup', handlers.api.newsletterSignup)
 
 app.use(handlers.notFound)
 
