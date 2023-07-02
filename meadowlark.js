@@ -1,9 +1,14 @@
 const express = require('express')
 const expressHandlebars = require('express-handlebars')
 const multiparty = require('multiparty')
+const cookieParser = require('cookie-parser')
+const expressSession = require('express-session')
 
 const handlers = require('./lib/handlers')
 const weatherMiddleware = require('./lib/middleware/weather')
+const flashMiddleware = require('./lib/middleware/flash')
+
+const { credentials } = require('./config')
 
 const app = express()
 
@@ -24,7 +29,15 @@ app.use(express.static(__dirname + '/public'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
+app.use(cookieParser(credentials.cookieSecret))
+app.use(expressSession({
+  resave: false,
+  saveUninitialized: false,
+  secret: credentials.cookieSecret,
+}))
+
 app.use(weatherMiddleware)
+app.use(flashMiddleware)
 
 app.get('/', handlers.home)
 
