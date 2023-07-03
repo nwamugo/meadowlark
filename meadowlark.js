@@ -7,6 +7,7 @@ const expressSession = require('express-session')
 const handlers = require('./lib/handlers')
 const weatherMiddleware = require('./lib/middleware/weather')
 const flashMiddleware = require('./lib/middleware/flash')
+const cartValidation = require('./lib/middleware/cartValidation')
 
 const { credentials } = require('./config')
 
@@ -38,6 +39,9 @@ app.use(expressSession({
 
 app.use(weatherMiddleware)
 app.use(flashMiddleware)
+app.use(cartValidation.resetValidation)
+app.use(cartValidation.checkWaivers)
+app.use(cartValidation.checkGuestCounts)
 
 app.get('/', handlers.home)
 
