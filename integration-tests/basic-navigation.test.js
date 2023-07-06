@@ -8,7 +8,7 @@ let port = null
 
 beforeEach(async () => {
   port = await portfinder.getPortPromise()
-  server = app.listen(port)
+  server = app(port)
 })
 
 afterEach(() => {

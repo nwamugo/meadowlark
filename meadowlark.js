@@ -1,8 +1,11 @@
 const express = require('express')
-const expressHandlebars = require('express-handlebars')
+const cluster = require('cluster')
+const fs = require('fs')
+const { create } = require('express-handlebars')
 const multiparty = require('multiparty')
 const cookieParser = require('cookie-parser')
 const expressSession = require('express-session')
+const morgan = require('morgan')
 
 const handlers = require('./lib/handlers')
 const weatherMiddleware = require('./lib/middleware/weather')
@@ -13,7 +16,7 @@ const { credentials } = require('./config')
 
 const app = express()
 
-app.engine('handlebars', expressHandlebars({
+const hbs = create({
   defaultLayout: 'main',
   helpers: {
     section: function(name, options) {
@@ -22,7 +25,9 @@ app.engine('handlebars', expressHandlebars({
       return null
     },
   },
-}))
+})
+
+app.engine('handlebars', hbs.engine)
 app.set('view engine', 'handlebars')
 
 app.use(express.static(__dirname + '/public'))
@@ -30,6 +35,17 @@ app.use(express.static(__dirname + '/public'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
+switch(app.get('env')) {
+  case 'development':
+    app.use(morgan('dev')) // https://github.com/expressjs/morgan
+    break
+  case 'production':
+    // eslint-disable-next-line no-case-declarations
+    const stream = fs.createWriteStream(__dirname + '/access.log', { flags: 'a' })
+    // Alternatively, you could take a more Unix-like approach and save the logs in a subdirectory of /var/log, as Apache does by default.
+    app.use(morgan('combined', { stream })) // https://httpd.apache.org/docs/current/logs.html#combined
+    break
+}
 app.use(cookieParser(credentials.cookieSecret))
 app.use(expressSession({
   resave: false,
@@ -37,6 +53,11 @@ app.use(expressSession({
   secret: credentials.cookieSecret,
 }))
 
+app.use((req, res, next) => {
+  if(cluster.isWorker)
+    console.log(`Worker ${cluster.worker.id} received cluster`)
+    next()
+})
 app.use(weatherMiddleware)
 app.use(flashMiddleware)
 app.use(cartValidation.resetValidation)
@@ -91,15 +112,21 @@ app.use(handlers.notFound)
 app.use(handlers.serverError)
 
 
-const PORT = process.env.PORT || 3000;
 
-
-if(require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Express started on http://localhost:${PORT} ` +
+function startServer(port) {
+  return app.listen(port, () => {
+    console.log(`Express started in ` +
+    `${app.get('env')} mode at http://localhost:${port} ` +
       'Press Ctrl+C to terminate.'
     )
   })
+}
+
+if(require.main === module) {
+  // application run directly; start app server
+  startServer(process.env.PORT || 3000)
 } else {
-  module.exports = app
+  // application imported as a module via "require": export
+  // function to create server
+  module.exports = startServer
 }
