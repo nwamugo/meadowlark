@@ -1,7 +1,7 @@
 const portfinder = require('portfinder')
 const puppeteer = require('puppeteer')
 
-const app = require('../meadowlark.js')
+const app = require('../../meadowlark.js')
 
 let server = null
 let port = null

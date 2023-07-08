@@ -4,8 +4,9 @@ const fs = require('fs')
 const { create } = require('express-handlebars')
 const multiparty = require('multiparty')
 const cookieParser = require('cookie-parser')
-const expressSession = require('express-session')
 const morgan = require('morgan')
+const expressSession = require('express-session')
+const RedisStore = require('connect-redis')(expressSession)
 
 const handlers = require('./lib/handlers')
 const weatherMiddleware = require('./lib/middleware/weather')
@@ -13,6 +14,8 @@ const flashMiddleware = require('./lib/middleware/flash')
 const cartValidation = require('./lib/middleware/cartValidation')
 
 const { credentials } = require('./config')
+
+require('./db')
 
 const app = express()
 
@@ -51,6 +54,10 @@ app.use(expressSession({
   resave: false,
   saveUninitialized: false,
   secret: credentials.cookieSecret,
+  store: new RedisStore({
+    url: credentials.redis[app.get('env')].url,
+    logErrors: true, // highly recommended!
+  }),
 }))
 
 app.use((req, res, next) => {
@@ -69,6 +76,7 @@ app.get('/', handlers.home)
 app.get('/about', handlers.about)
 
 // handlers for browser-based form submission
+app.get('/set-currency/:currency', handlers.setCurrency)
 app.get('/newsletter-signup', handlers.newsletterSignup)
 app.post('/newsletter-signup/process', handlers.newsletterSignupProcess)
 app.post(
@@ -76,6 +84,7 @@ app.post(
   handlers.newsletterSignupThankYou
 )
 
+app.get('vacations', handlers.listVacations)
 app.get('/contest/vacation-photo', handlers.vacationPhotoContest)
 app.get(
   '/contest/vacation-photo-ajax',
